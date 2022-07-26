@@ -80,6 +80,50 @@ def create_heavy_hex_tiles(diam: int) -> List[Tile]:
     return tiles
 
 
+def make_round(*, layer: int, tiles, builder: Builder, time_boundary_basis: str, x_combos, z_combos):
+    for desired_parity in [False, True]:
+        for tile in tiles:
+            parity = tile.measure_qubit.real % 2 == 0.5
+            if tile.basis == 'X' and parity == desired_parity:
+                builder.measure_pauli_product(
+                    qs={tile.basis: tile.data_set},
+                    key=tile.measure_qubit,
+                    layer=layer,
+                )
+        builder.tick()
+
+    for desired_parity in [False, True]:
+        for tile in tiles:
+            parity = tile.measure_qubit.imag % 2 == 0.5
+            if tile.basis == 'Z' and parity == desired_parity:
+                builder.measure_pauli_product(
+                    qs={tile.basis: tile.data_set},
+                    key=tile.measure_qubit,
+                    layer=layer,
+                )
+        if not desired_parity:
+            builder.tick()
+
+    # Combined X column detectors
+    if layer > 0 or time_boundary_basis == 'X':
+        for combined_tiles in x_combos:
+            builder.detector([
+                AtLayer(tile.measure_qubit, layer - d)
+                for tile in combined_tiles
+                for d in ([0, 1] if layer > 0 else [0])
+            ], pos=sum(tile.measure_qubit for tile in combined_tiles) / len(combined_tiles))
+
+    # Z detectors
+    if layer > 0 or time_boundary_basis == 'Z':
+        for combined_tiles in z_combos:
+            builder.detector([
+                AtLayer(tile.measure_qubit, layer - d)
+                for tile in combined_tiles
+                for d in ([0, 1] if layer > 0 else [0])
+            ], pos=sum(tile.measure_qubit for tile in combined_tiles) / len(combined_tiles))
+    builder.tick()
+
+
 def make_heavy_hex_circuit(
         *,
         diam: int,
@@ -121,53 +165,37 @@ def make_heavy_hex_circuit(
         builder.gate("H", data_set)
         builder.tick()
 
-    layer = 0
-    for _ in range(rounds):
-        for desired_parity in [False, True]:
-            for tile in tiles:
-                parity = tile.measure_qubit.real % 2 == 0.5
-                if tile.basis == 'X' and parity == desired_parity:
-                    builder.measure_pauli_product(
-                        qs={tile.basis: tile.data_set},
-                        key=tile.measure_qubit,
-                        layer=layer,
-                    )
-            builder.tick()
+    assert rounds >= 2
+    make_round(layer=0,
+               tiles=tiles,
+               builder=builder,
+               time_boundary_basis=time_boundary_basis,
+               x_combos=x_combos,
+               z_combos=z_combos)
 
-        for desired_parity in [False, True]:
-            for tile in tiles:
-                parity = tile.measure_qubit.imag % 2 == 0.5
-                if tile.basis == 'Z' and parity == desired_parity:
-                    builder.measure_pauli_product(
-                        qs={tile.basis: tile.data_set},
-                        key=tile.measure_qubit,
-                        layer=layer,
-                    )
-            builder.tick()
+    head = builder.circuit.copy()
+    builder.circuit.clear()
+    layer = 1
+    make_round(layer=1,
+               tiles=tiles,
+               builder=builder,
+               time_boundary_basis=time_boundary_basis,
+               x_combos=x_combos,
+               z_combos=z_combos)
 
-        # Combined X column detectors
-        if layer > 0 or time_boundary_basis == 'X':
-            for combined_tiles in x_combos:
-                builder.detector([
-                    AtLayer(tile.measure_qubit, layer - d)
-                    for tile in combined_tiles
-                    for d in ([0, 1] if layer > 0 else [0])
-                ], pos=sum(tile.measure_qubit for tile in combined_tiles) / len(combined_tiles))
-
-        # Z detectors
-        if layer > 0 or time_boundary_basis == 'Z':
-            for combined_tiles in z_combos:
-                builder.detector([
-                    AtLayer(tile.measure_qubit, layer - d)
-                    for tile in combined_tiles
-                    for d in ([0, 1] if layer > 0 else [0])
-                ], pos=sum(tile.measure_qubit for tile in combined_tiles) / len(combined_tiles))
+    if rounds > 2:
+        builder.circuit *= (rounds - 2)
         layer += 1
+        make_round(layer=layer,
+                   tiles=tiles,
+                   builder=builder,
+                   time_boundary_basis=time_boundary_basis,
+                   x_combos=x_combos,
+                   z_combos=z_combos)
 
     if time_boundary_basis == 'X':
         builder.gate('H', data_set)
         builder.tick()
-    layer -= 1
     builder.measure(data_set, layer=layer)
 
     # Final X column detectors
@@ -185,7 +213,7 @@ def make_heavy_hex_circuit(
         obs_qubits = {q for q in data_set if q.imag == 0}
     builder.obs_include([AtLayer(q, layer) for q in obs_qubits],
                         obs_index=0)
-    return builder.circuit
+    return head + builder.circuit
 
 
 def make_noise_model(noise: float) -> NoiseModel:
@@ -216,19 +244,34 @@ def make_noise_model(noise: float) -> NoiseModel:
         }
     )
 
+def make_noisy_heavy_hex_circuit(
+        *,
+        diam: int,
+        time_boundary_basis: str,
+        rounds: int,
+        noise: float,
+) -> stim.Circuit:
+    ideal_circuit = make_heavy_hex_circuit(
+        diam=diam,
+        time_boundary_basis=time_boundary_basis,
+        rounds=rounds,
+    )
+    return make_noise_model(noise).noisy_circuit(ideal_circuit)
+
+
 def main():
     circuits_dir = pathlib.Path('out/circuits')
     circuits_dir.mkdir(exist_ok=True, parents=True)
 
     for basis in 'XZ':
-        for diam in [3, 5, 7]:
-            for noise in [1e-4, 5e-4, 1e-3, 5e-3, 1e-2]:
-                ideal_circuit = make_heavy_hex_circuit(
+        for diam in [3, 5, 7, 9, 11, 13, 15]:
+            for noise in [1e-3]:
+                noisy_circuit = make_noisy_heavy_hex_circuit(
                     diam=diam,
                     time_boundary_basis=basis,
                     rounds=diam * 3,
+                    noise=noise,
                 )
-                noisy_circuit = make_noise_model(noise).noisy_circuit(ideal_circuit)
 
                 # Verify workable
                 noisy_circuit.detector_error_model(decompose_errors=True)
@@ -239,7 +282,7 @@ def main():
                 print("wrote", path)
 
     with open('out/viewer.html', 'w') as f:
-        print(stim_circuit_html_viewer(ideal_circuit), file=f)
+        print(stim_circuit_html_viewer(noisy_circuit), file=f)
 
 
 

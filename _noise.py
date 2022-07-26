@@ -368,6 +368,9 @@ def _iter_split_op_moments(circuit: stim.Circuit) -> Iterator[Union[stim.Circuit
 
     for op in circuit:
         if isinstance(op, stim.CircuitRepeatBlock):
+            if cur_moment:
+                yield cur_moment
+                cur_moment = []
             yield op
         elif isinstance(op, stim.CircuitInstruction):
             if op.name == 'TICK':
