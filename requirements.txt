@@ -1,0 +1,3 @@
+stim == 1.9
+sinter == 1.9
+pymatching
