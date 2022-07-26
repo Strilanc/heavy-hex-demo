@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Oof, no open source correlated decoder to reproduce the correlated stats...
 sinter collect \
     --circuits out/circuits/* \
     --decoders pymatching \

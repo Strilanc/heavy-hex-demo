@@ -22,8 +22,16 @@ def test_circuit_distance(diam: int, basis: str, gate_set: str):
     # Verify errors decompose.
     circuit.detector_error_model(decompose_errors=True)
 
-    # Verify expected distance.
+    # Verify expected graphlike distance.
     assert len(circuit.shortest_graphlike_error()) == diam
+
+    # More expensive distance verification, beyond graphlike errors.
+    assert len(circuit.search_for_undetectable_logical_errors(
+        dont_explore_detection_event_sets_with_size_above=6,
+        dont_explore_edges_increasing_symptom_degree=False,
+        dont_explore_edges_with_degree_above=999,
+        canonicalize_circuit_errors=True,
+    )) == diam
 
 
 def test_exact_circuit_mpp():
