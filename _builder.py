@@ -202,6 +202,14 @@ class Builder:
     def tick(self) -> None:
         self.circuit.append('TICK')
 
+    def cx(self, pairs: List[Tuple[complex, complex]]) -> None:
+        sorted_pairs = []
+        for a, b in pairs:
+            sorted_pairs.append((a, b))
+        sorted_pairs = sorted(sorted_pairs, key=lambda e: (complex_key(e[0]), complex_key(e[1])))
+        for a, b in sorted_pairs:
+            self.circuit.append('CX', [self.q2i[a], self.q2i[b]])
+
     def cz(self, pairs: List[Tuple[complex, complex]]) -> None:
         sorted_pairs = []
         for a, b in pairs:
