@@ -7,7 +7,7 @@ from typing import Tuple, Dict, List, Set, Optional, Union, Iterable
 
 import stim
 
-PITCH = 32
+PITCH = 32 * 4
 DIAM = 32
 RAD = DIAM / 2
 NOISY_GATES = {"X_ERROR", "Y_ERROR", "Z_ERROR", "E", "ELSE_CORRELATED_ERROR", "DEPOLARIZE1", "DEPOLARIZE2"}
