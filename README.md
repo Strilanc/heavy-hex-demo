@@ -21,7 +21,7 @@ Plotting logical error rate vs distance:
 | Flag measurements not included        | ![imag](out/plots/correlated_diam_vs_logical_error_rate_X_no_flags.png) | ![imag](out/plots/uncorrelated_diam_vs_logical_error_rate_X_no_flags.png) |
 
 
-| Z BASIS (no threshold)                | Correlated Matching                                                          | Uncorrelated Matching                                                          |
+| Z BASIS                | Correlated Matching                                                          | Uncorrelated Matching                                                          |
 |---------------------------------------|------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
 | Flag measurements marked as detectors | ![imag](out/plots/correlated_diam_vs_logical_error_rate_Z.png)          | ![imag](out/plots/uncorrelated_diam_vs_logical_error_rate_Z.png)          |
 | Flag measurements not included        | ![imag](out/plots/correlated_diam_vs_logical_error_rate_Z_no_flags.png) | ![imag](out/plots/uncorrelated_diam_vs_logical_error_rate_Z_no_flags.png) |
@@ -34,7 +34,7 @@ Plotting logical error rate vs physical error rate:
 | Flag measurements not included        | ![imag](out/plots/correlated_physical_noise_vs_logical_error_rate_X_no_flags.png) | ![imag](out/plots/uncorrelated_physical_noise_vs_logical_error_rate_X_no_flags.png) |
 
 
-| Z BASIS (no threshold)                | Correlated Matching                                                          | Uncorrelated Matching                                                          |
+| Z BASIS                | Correlated Matching                                                          | Uncorrelated Matching                                                          |
 |---------------------------------------|------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
 | Flag measurements marked as detectors | ![imag](out/plots/correlated_physical_noise_vs_logical_error_rate_Z.png)          | ![imag](out/plots/uncorrelated_physical_noise_vs_logical_error_rate_Z.png)          |
 | Flag measurements not included        | ![imag](out/plots/correlated_physical_noise_vs_logical_error_rate_Z_no_flags.png) | ![imag](out/plots/uncorrelated_physical_noise_vs_logical_error_rate_Z_no_flags.png) |
