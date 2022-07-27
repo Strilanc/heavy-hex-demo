@@ -150,7 +150,8 @@ def make_cx_based_round(*,
                         builder: Builder,
                         time_boundary_basis: str,
                         x_combos: List[List[Tile]],
-                        z_combos: List[List[Optional[Tile]]]):
+                        z_combos: List[List[Optional[Tile]]],
+                        include_flags: bool):
     # step = 1
     builder.gate("R", [t.m for t in tiles])
     builder.tick()
@@ -244,11 +245,12 @@ def make_cx_based_round(*,
         if t.basis == 'X' and t.degree == 4
         for d in [0.5, -0.5]
     ]
-    builder.measure(flags,
-                    layer=layer,
-                    tracker_key=lambda c: ('flag', c))
-    for f in flags:
-        builder.detector([AtLayer(('flag', f), layer)], pos=f + 0.25 + 0.25j)
+    if include_flags:
+        builder.measure(flags,
+                        layer=layer,
+                        tracker_key=lambda c: ('flag', c))
+        for f in flags:
+            builder.detector([AtLayer(('flag', f), layer)], pos=f + 0.25 + 0.25j)
     builder.shift_coords(dt=1)
     builder.tick()
     builder.gate('R', [t.m for t in tiles if t.basis == 'Z'])
@@ -360,7 +362,9 @@ def make_heavy_hex_circuit(
     if gate_set == 'mpp':
         round_maker = make_mpp_based_round
     elif gate_set == 'cx':
-        round_maker = make_cx_based_round
+        round_maker = functools.partial(make_cx_based_round, include_flags=True)
+    elif gate_set == 'cx_noflags':
+        round_maker = functools.partial(make_cx_based_round, include_flags=False)
     else:
         raise NotImplementedError(f'{gate_set=}')
 
@@ -490,7 +494,7 @@ def main():
                 0.008,
                 0.01,
             ]:
-                for gate_set in ['cx']:
+                for gate_set in ['cx', 'cx_noflags']:
                     rounds = diam * 3
                     noisy_circuit = make_noisy_heavy_hex_circuit(
                         diam=diam,
@@ -502,12 +506,10 @@ def main():
 
                     # Verify workable
                     noisy_circuit.detector_error_model(decompose_errors=True)
-
                     path = circuits_dir / f'd={diam},p={noise},b={basis},g={gate_set},r={rounds}.stim'
                     with open(path, 'w') as f:
                         print(noisy_circuit, file=f)
                     print("wrote", path)
-
 
 
 if __name__ == '__main__':

@@ -6,9 +6,9 @@ from main import make_noisy_heavy_hex_circuit
 
 @pytest.mark.parametrize("diam,basis,gate_set", [
     (d, b, g)
-    for d in [3, 5, 7]
+    for d in [3, 5, 7, 9]
     for b in 'XZ'
-    for g in ['mpp', 'cx']
+    for g in ['mpp', 'cx', 'cx_noflags']
 ])
 def test_circuit_distance(diam: int, basis: str, gate_set: str):
     circuit = make_noisy_heavy_hex_circuit(
@@ -22,16 +22,22 @@ def test_circuit_distance(diam: int, basis: str, gate_set: str):
     # Verify errors decompose.
     circuit.detector_error_model(decompose_errors=True)
 
+    expected_distance = diam
+    if 'noflags' in gate_set and basis == 'Z':
+        expected_distance //= 2
+        expected_distance += 1
+
     # Verify expected graphlike distance.
-    assert len(circuit.shortest_graphlike_error()) == diam
+    assert len(circuit.shortest_graphlike_error()) == expected_distance
 
     # More expensive distance verification, beyond graphlike errors.
-    assert len(circuit.search_for_undetectable_logical_errors(
-        dont_explore_detection_event_sets_with_size_above=6,
-        dont_explore_edges_increasing_symptom_degree=False,
-        dont_explore_edges_with_degree_above=999,
-        canonicalize_circuit_errors=True,
-    )) == diam
+    if diam <= 5:
+        assert len(circuit.search_for_undetectable_logical_errors(
+            dont_explore_detection_event_sets_with_size_above=6,
+            dont_explore_edges_increasing_symptom_degree=False,
+            dont_explore_edges_with_degree_above=999,
+            canonicalize_circuit_errors=True,
+        )) == expected_distance
 
 
 def test_exact_circuit_mpp():
